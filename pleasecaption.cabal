@@ -23,4 +23,5 @@ executable pleasecaption
                        resourcet >= 1.1.7.4,
                        text >= 1.2.2.1,
                        twitter-conduit >= 0.2.1,
+                       twitter-types >= 0.7.2.2,
                        twitter-types-lens >= 0.7.2
