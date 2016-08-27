@@ -2,6 +2,8 @@ flags: {}
 extra-package-dbs: []
 packages:
 - '.'
+- 'twitter-types'
+- 'twitter-types-lens'
 extra-deps:
 - RSA-2.2.0
 - aeson-0.11.2.0
@@ -27,7 +29,5 @@ extra-deps:
 - reflection-2.1.2
 - tls-1.3.8
 - twitter-conduit-0.2.1
-- twitter-types-0.7.2.2
-- twitter-types-lens-0.7.2
 - x509-validation-1.6.3
 resolver: ghc-8.0.1

@@ -2,21 +2,24 @@
 
 module Main where
 
-import Web.Twitter.Conduit hiding (inReplyToStatusId)
+import qualified Data.ByteString.Char8 as S8
+import qualified Data.Conduit as C
+import qualified Data.Conduit.List as CL
+import Data.Foldable (forM_)
+import Data.Maybe (catMaybes)
+import qualified Data.Text as T
+import qualified Data.Text.IO as TI
+import System.Environment (getEnv)
+
+import Control.Monad.Trans.Resource (runResourceT)
+import Control.Monad.IO.Class (liftIO)
+import Control.Lens ((^.), (&), (?~))
+import Web.Twitter.Conduit hiding (inReplyToStatusId, map)
 import Web.Twitter.Conduit.Parameters (inReplyToStatusId)
 import Web.Twitter.Types
 import qualified Web.Twitter.Types.Lens as TL
 
-import Control.Monad.IO.Class (liftIO)
-import Control.Monad.Trans.Resource (runResourceT)
-import Control.Lens ((^.), (&), (?~))
-import System.Environment (getEnv)
 
-import qualified Data.ByteString.Char8 as S8
-import qualified Data.Conduit as C
-import qualified Data.Conduit.List as CL
-import qualified Data.Text as T
-import qualified Data.Text.IO as TI
 
 data State = State {
   ourUserId :: UserId,
@@ -43,6 +46,7 @@ getTWInfo = do
     getEnv' = (S8.pack <$>) . getEnv
 
 
+main :: IO ()
 main = do
   mgr <- newManager tlsManagerSettings
   twinfo <- getTWInfo
@@ -78,6 +82,11 @@ handleStatus
       res <- call twinfo mgr $ update reply & inReplyToStatusId ?~ sid
       print res
 
+
+handleStatus _ Status { statusExtendedEntities = Just (ExtendedEntities entities)} = do
+  let altTexts = catMaybes $ map (exeExtAltText . entityBody) entities
+  putStrLn $ "alt text received: " ++ show entities
+  forM_ altTexts $ putStrLn . ("alt text: " ++)
 
 handleStatus _ Status { statusText = text,
                         statusUser = User { userScreenName = screenName }} =
