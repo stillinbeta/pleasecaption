@@ -6,8 +6,7 @@ import Control.Monad (when, void)
 import qualified Data.ByteString.Char8 as S8
 import qualified Data.Conduit as C
 import qualified Data.Conduit.List as CL
-import Data.Foldable (forM_)
-import Data.Maybe (catMaybes, fromMaybe, isJust)
+import Data.Maybe (fromMaybe, isJust)
 import qualified Data.Text as T
 import qualified Data.Text.IO as TI
 import System.Environment (getEnv)
@@ -16,13 +15,10 @@ import Data.Aeson (FromJSON)
 import Control.Monad.Trans.Resource (runResourceT)
 import Control.Monad.IO.Class (liftIO)
 import Control.Lens ((^.), (&), (?~))
-import Web.Twitter.Conduit hiding (inReplyToStatusId, map)
-import Web.Twitter.Conduit.Parameters (inReplyToStatusId, includeExtAltText)
+import Web.Twitter.Conduit hiding (inReplyToStatusId, map, replies)
+import Web.Twitter.Conduit.Parameters (inReplyToStatusId, includeExtAltText, replies)
 import Web.Twitter.Types
 import qualified Web.Twitter.Types.Lens as TL
-
-
-
 
 data State = State {
   sTwInfo   :: TWInfo,
@@ -56,11 +52,16 @@ main :: IO ()
 main = do
   mgr <- newManager tlsManagerSettings
   twinfo <- getTWInfo
-  userId <- getUserId mgr twinfo
-  let state = State { ourUserId = userId, sTwInfo = twinfo, sManager = mgr }
+  uid <- getUserId mgr twinfo
+  let state = State { ourUserId = uid, sTwInfo = twinfo, sManager = mgr }
   runResourceT $ do
-    src <- stream twinfo mgr userstream
+    src <- stream twinfo mgr $ userstream & replies ?~ "all"
     src C.$$+- CL.mapM_ (liftIO . (printTL state))
+
+printTL :: State -> StreamingAPI -> IO ()
+printTL state (SStatus s) = handleStatus state s
+printTL state (SEvent e) = handleEvent state e
+printTL _ s = print s
 
 getUserId :: Manager -> TWInfo -> IO UserId
 getUserId mgr twinfo = do
@@ -72,17 +73,12 @@ getStatus :: State -> StatusId -> IO Status
 getStatus state sid =
   sCall state $ showId sid & includeExtAltText ?~ True
 
-printTL :: State -> StreamingAPI -> IO ()
-printTL state (SStatus s) = handleStatus state s
-printTL state (SEvent e) = handleEvent state e
-printTL _ s = print s
-
 getExtendedEntities :: Status -> [ExtendedEntity]
 getExtendedEntities status =
   fromMaybe [] $ (map entityBody) . exeMedia <$> statusExtendedEntities status
 
-hasImageEntities :: Status -> Bool
-hasImageEntities status =
+statusHasPhotoEntities :: Status -> Bool
+statusHasPhotoEntities status =
   let entities = getExtendedEntities status in
     not $ null entities && all (=="photo") (map exeType entities)
 
@@ -90,7 +86,6 @@ statusHasAltText :: Status -> Bool
 statusHasAltText status =
   let entities = getExtendedEntities status in
     all (isJust . exeExtAltText) entities
-
 
 getReminderText :: IO T.Text
 -- TODO: Will eventually pick one at random
@@ -106,22 +101,23 @@ replyToStatus status tweet =
 
 handleStatus :: State -> Status -> IO ()
 handleStatus state status
-  | hasImageEntities status = do
+  | statusHasPhotoEntities status = do
       status' <- getStatus state $ statusId status
       when (not $ statusHasAltText status') $ do
         reminderText <- getReminderText
         let reply = replyToStatus status reminderText
         void $ sCall state reply
-  | True = return ()
+  | True = printStatus status
 
 handleEvent :: State -> Event -> IO ()
 handleEvent state Event { evEvent = "follow", evSource = ETUser user}
   -- they followed us
   | userId user /= ourUserId state = do
       let req = friendshipsCreate (UserIdParam $ userId user)
+      TI.putStrLn $ T.concat [ "following user ", user ^. TL.userScreenName ]
       void $ sCall state req
   -- we followed someone
-  | userId user == ourUserId state = putStrLn "we followed someone"
+  | userId user == ourUserId state = return ()
 handleEvent _ ev =
   TI.putStrLn $ T.concat ["ignoring event type ", ev ^. TL.evEvent]
 
