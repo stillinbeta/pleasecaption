@@ -6,7 +6,7 @@ import qualified Data.ByteString.Char8 as S8
 import qualified Data.Conduit as C
 import qualified Data.Conduit.List as CL
 import Data.Foldable (forM_)
-import Data.Maybe (catMaybes)
+import Data.Maybe (catMaybes, fromMaybe)
 import qualified Data.Text as T
 import qualified Data.Text.IO as TI
 import System.Environment (getEnv)
@@ -75,37 +75,38 @@ printTL :: State -> StreamingAPI -> IO ()
 printTL state (SStatus s) = handleStatus state s
 printTL _ s = print s
 
+getExtendedEntities :: Status -> [ExtendedEntity]
+getExtendedEntities status =
+  fromMaybe [] $ (map entityBody) . exeMedia <$> statusExtendedEntities status
+
+hasImageEntities :: Status -> Bool
+hasImageEntities status =
+  let entities = getExtendedEntities status in
+    not $ null entities && all (=="photo") (map exeType entities)
+
 handleStatus :: State -> Status -> IO ()
-handleStatus
-  State { ourUserId = uid,
-          sManager = mgr,
-          sTwInfo = twinfo }
-  Status { statusId = sid,
-           statusInReplyToUserId = (Just ruid),
-           statusUser = user,
-           statusText = text}
-  | uid == ruid = do
-      TI.putStrLn $ "got mentioned!" `T.append` text
-      let reply = T.concat ["@", user ^. TL.screen_name,  " hey yourself!"]
-      res <- call twinfo mgr $ update reply & inReplyToStatusId ?~ sid
-      print res
+-- handleStatus
+--   State { ourUserId = uid,
+--           sManager = mgr,
+--           sTwInfo = twinfo }
+--   Status { statusId = sid,
+--            statusInReplyToUserId = (Just ruid),
+--            statusUser = user,
+--            statusText = text}
+--   | uid == ruid = do
+--       TI.putStrLn $ "got mentioned!" `T.append` text
+--       let reply = T.concat ["@", user ^. TL.screen_name,  " hey yourself!"]
+--       res <- call twinfo mgr $ update reply & inReplyToStatusId ?~ sid
+--       print res
 
-
-handleStatus state Status {
-  statusExtendedEntities = Just (ExtendedEntities _),
-  statusId = sid
-  } = do
-      status <- getStatus state sid
-      case status of
-        Status { statusExtendedEntities = Just (ExtendedEntities entities)} ->
-          do
-            let altTexts = catMaybes $ map (exeExtAltText . entityBody) entities
-            putStrLn $ "alt text received: " ++ show entities
-            forM_ altTexts $ putStrLn . ("alt text: " ++)
-        _ ->
-          printStatus status
-
-handleStatus _ status = printStatus status
+handleStatus state status
+  | hasImageEntities status = do
+      status' <- getStatus state $ statusId status
+      let entities = getExtendedEntities status'
+      let altTexts = catMaybes $ map exeExtAltText entities
+      putStrLn $ "alt text received: " ++ show entities
+      forM_ altTexts $ putStrLn . ("alt text: " ++)
+  | True = printStatus status
 
 printStatus :: Status -> IO ()
 printStatus Status { statusText = text,
