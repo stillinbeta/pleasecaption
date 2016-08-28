@@ -11,13 +11,15 @@ import qualified Data.Text as T
 import qualified Data.Text.IO as TI
 import System.Environment (getEnv)
 
+import Data.Aeson (FromJSON)
 import Control.Monad.Trans.Resource (runResourceT)
 import Control.Monad.IO.Class (liftIO)
 import Control.Lens ((^.), (&), (?~))
 import Web.Twitter.Conduit hiding (inReplyToStatusId, map)
-import Web.Twitter.Conduit.Parameters (inReplyToStatusId)
+import Web.Twitter.Conduit.Parameters (inReplyToStatusId, includeExtAltText)
 import Web.Twitter.Types
 import qualified Web.Twitter.Types.Lens as TL
+
 
 
 
@@ -26,6 +28,9 @@ data State = State {
   sTwInfo :: TWInfo,
   sManager :: Manager
   }
+
+sCall :: FromJSON responseType => State -> APIRequest apiName responseType -> IO responseType
+sCall (State { sTwInfo = twinfo, sManager = manager}) = call twinfo manager
 
 getTWInfo :: IO TWInfo
 getTWInfo = do
@@ -62,6 +67,9 @@ getUserId mgr twinfo = do
   let User {userId = uid} = user in
     return uid
 
+getStatus :: State -> StatusId -> IO Status
+getStatus state sid =
+  sCall state $ showId sid & includeExtAltText ?~ True
 
 printTL :: State -> StreamingAPI -> IO ()
 printTL state (SStatus s) = handleStatus state s
@@ -83,11 +91,23 @@ handleStatus
       print res
 
 
-handleStatus _ Status { statusExtendedEntities = Just (ExtendedEntities entities)} = do
-  let altTexts = catMaybes $ map (exeExtAltText . entityBody) entities
-  putStrLn $ "alt text received: " ++ show entities
-  forM_ altTexts $ putStrLn . ("alt text: " ++)
+handleStatus state Status {
+  statusExtendedEntities = Just (ExtendedEntities _),
+  statusId = sid
+  } = do
+      status <- getStatus state sid
+      case status of
+        Status { statusExtendedEntities = Just (ExtendedEntities entities)} ->
+          do
+            let altTexts = catMaybes $ map (exeExtAltText . entityBody) entities
+            putStrLn $ "alt text received: " ++ show entities
+            forM_ altTexts $ putStrLn . ("alt text: " ++)
+        _ ->
+          printStatus status
 
-handleStatus _ Status { statusText = text,
+handleStatus _ status = printStatus status
+
+printStatus :: Status -> IO ()
+printStatus Status { statusText = text,
                         statusUser = User { userScreenName = screenName }} =
   TI.putStrLn $ T.concat [ "@", screenName, ":", text ]
