@@ -2,9 +2,15 @@ flags: {}
 extra-package-dbs: []
 packages:
 - '.'
-- ./twitter-types/twitter-types
-- ./twitter-types/twitter-types-lens
-- ./twitter-conduit
+- location:
+    git: 'git@github.com:stillinbeta/twitter-types.git'
+    commit: '8a598accc4715d6b3b7e1ed19947aa99837a84f5'
+  subdirs:
+    - 'twitter-types'
+    - 'twitter-types-lens'
+- location:
+    git: 'git@github.com:stillinbeta/twitter-conduit.git'
+    commit: 'cdce8717304d76ffccc872fd9ed1cb0f5cdf525d'
 extra-deps:
 - MonadPrompt-1.0.0.5
 - MonadRandom-0.4.2.3

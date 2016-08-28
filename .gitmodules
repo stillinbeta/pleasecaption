@@ -1,7 +1,0 @@
-[submodule "twitter-types"]
-	path = twitter-types
-	url = git@github.com:stillinbeta/twitter-types.git
-[submodule "twitter-conduit"]
-	path = twitter-conduit
-	url = git@github.com:stillinbeta/twitter-conduit.git
-	branch = liz-add-alt-text-param
