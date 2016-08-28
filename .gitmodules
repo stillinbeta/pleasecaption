@@ -1,0 +1,3 @@
+[submodule "twitter-types"]
+	path = twitter-types
+	url = git@github.com:stillinbeta/twitter-types.git
