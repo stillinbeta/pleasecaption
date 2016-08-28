@@ -14,6 +14,7 @@ cabal-version:       >=1.10
 
 executable pleasecaption
   hs-source-dirs:      src
+  other-modules:       Web.Twitter.PleaseCaption.Replies
   main-is:             Main.hs
   default-language:    Haskell2010
   build-depends:       base >= 4.7 && < 5,
@@ -25,4 +26,7 @@ executable pleasecaption
                        twitter-conduit >= 0.2.1,
                        aeson >= 0.11,
                        twitter-types,
-                       twitter-types-lens
+                       twitter-types-lens,
+                       random-extras >= 0.19,
+                       random-fu >= 0.2.7.0,
+                       random-source >= 0.3

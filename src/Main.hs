@@ -20,6 +20,8 @@ import Web.Twitter.Conduit.Parameters (inReplyToStatusId, includeExtAltText, rep
 import Web.Twitter.Types
 import qualified Web.Twitter.Types.Lens as TL
 
+import Web.Twitter.PleaseCaption.Replies (getReminderText)
+
 data State = State {
   sTwInfo   :: TWInfo,
   sManager  :: Manager,
@@ -87,9 +89,6 @@ statusHasAltText status =
   let entities = getExtendedEntities status in
     all (isJust . exeExtAltText) entities
 
-getReminderText :: IO T.Text
--- TODO: Will eventually pick one at random
-getReminderText = return "please don't forget to caption your tweets!"
 
 replyToStatus :: Status -> T.Text -> APIRequest StatusesUpdate Status
 replyToStatus status tweet =
