@@ -52,6 +52,7 @@ getTWInfo = do
 
 main :: IO ()
 main = do
+  putStrLn "pleasecaption: starting up"
   mgr <- newManager tlsManagerSettings
   twinfo <- getTWInfo
   uid <- getUserId mgr twinfo
