@@ -9,10 +9,11 @@ import qualified Data.Conduit.List as CL
 import Data.Maybe (fromMaybe, isJust)
 import qualified Data.Text as T
 import qualified Data.Text.IO as TI
+import System.IO (hSetBuffering, stdout, BufferMode(..))
 import System.Environment (getEnv)
 
 import Data.Aeson (FromJSON)
-import Control.Monad.Trans.Resource (runResourceT)
+import Control.Monad.Trans.Resource (runResourceT, MonadResource)
 import Control.Monad.IO.Class (liftIO)
 import Control.Lens ((^.), (&), (?~))
 import Web.Twitter.Conduit hiding (inReplyToStatusId, map, replies)
@@ -21,6 +22,7 @@ import Web.Twitter.Types
 import qualified Web.Twitter.Types.Lens as TL
 
 import Web.Twitter.PleaseCaption.Replies (getReminderText)
+
 
 data State = State {
   sTwInfo   :: TWInfo,
@@ -50,8 +52,14 @@ getTWInfo = do
     getEnv' = (S8.pack <$>) . getEnv
 
 
+getStream :: (MonadResource m0)
+          => State -> m0 (C.ResumableSource m0 StreamingAPI)
+getStream State {sTwInfo = twinfo, sManager = mgr} =
+  stream twinfo mgr $ userstream & replies ?~ "all"
+
 main :: IO ()
 main = do
+  hSetBuffering stdout NoBuffering
   putStrLn "pleasecaption: starting up"
   mgr <- newManager tlsManagerSettings
   twinfo <- getTWInfo
@@ -124,5 +132,5 @@ handleEvent _ ev =
 
 printStatus :: Status -> IO ()
 printStatus Status { statusText = text,
-                        statusUser = User { userScreenName = screenName }} =
+                     statusUser = User { userScreenName = screenName }} =
   TI.putStrLn $ T.concat [ "@", screenName, ":", text ]
