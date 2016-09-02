@@ -14,6 +14,7 @@ import System.Environment (getEnv)
 
 import Data.Aeson (FromJSON)
 import Control.Monad.Trans.Resource (runResourceT, MonadResource)
+import Control.Monad.Reader (runReaderT, ReaderT(..), asks)
 import Control.Monad.IO.Class (liftIO)
 import Control.Lens ((^.), (&), (?~))
 import Web.Twitter.Conduit hiding (inReplyToStatusId, map, replies)
@@ -30,8 +31,13 @@ data State = State {
   ourUserId :: UserId
   }
 
-sCall :: FromJSON responseType => State -> APIRequest apiName responseType -> IO responseType
-sCall (State { sTwInfo = twinfo, sManager = manager}) = call twinfo manager
+sCall :: FromJSON responseType
+      => APIRequest apiName responseType
+      -> ReaderT State IO responseType
+sCall request = do
+  twinfo <- asks sTwInfo
+  manager <- asks sManager
+  liftIO $ call twinfo manager request
 
 getTWInfo :: IO TWInfo
 getTWInfo = do
@@ -52,9 +58,9 @@ getTWInfo = do
     getEnv' = (S8.pack <$>) . getEnv
 
 
-getStream :: (MonadResource m0)
+askstream :: (MonadResource m0)
           => State -> m0 (C.ResumableSource m0 StreamingAPI)
-getStream State {sTwInfo = twinfo, sManager = mgr} =
+askstream State {sTwInfo = twinfo, sManager = mgr} =
   stream twinfo mgr $ userstream & replies ?~ "all"
 
 main :: IO ()
@@ -67,12 +73,12 @@ main = do
   let state = State { ourUserId = uid, sTwInfo = twinfo, sManager = mgr }
   runResourceT $ do
     src <- stream twinfo mgr $ userstream & replies ?~ "all"
-    src C.$$+- CL.mapM_ (liftIO . (printTL state))
+    src C.$$+- CL.mapM_ (liftIO . (\s -> runReaderT (printTL s) state))
 
-printTL :: State -> StreamingAPI -> IO ()
-printTL state (SStatus s) = handleStatus state s
-printTL state (SEvent e) = handleEvent state e
-printTL _ s = print s
+printTL :: StreamingAPI -> ReaderT State IO ()
+printTL (SStatus s) = handleStatus s
+printTL (SEvent e) = handleEvent e
+printTL s = liftIO $ print s
 
 getUserId :: Manager -> TWInfo -> IO UserId
 getUserId mgr twinfo = do
@@ -80,9 +86,9 @@ getUserId mgr twinfo = do
   let User {userId = uid} = user in
     return uid
 
-getStatus :: State -> StatusId -> IO Status
-getStatus state sid =
-  sCall state $ showId sid & includeExtAltText ?~ True
+askstatus :: StatusId -> ReaderT State IO Status
+askstatus sid =
+  sCall $ showId sid & includeExtAltText ?~ True
 
 getExtendedEntities :: Status -> [ExtendedEntity]
 getExtendedEntities status =
@@ -107,27 +113,26 @@ replyToStatus status tweet =
                        , tweet] in
   update reply & inReplyToStatusId ?~ status ^. TL.statusId
 
-handleStatus :: State -> Status -> IO ()
-handleStatus state status
+handleStatus :: Status -> ReaderT State IO ()
+handleStatus status
   | statusHasPhotoEntities status = do
-      status' <- getStatus state $ statusId status
+      status' <- askstatus $ statusId status
       when (not $ statusHasAltText status') $ do
-        reminderText <- getReminderText
+        reminderText <- liftIO getReminderText
         let reply = replyToStatus status reminderText
-        void $ sCall state reply
-  | True = printStatus status
+        void $ sCall reply
+  | True = liftIO $ printStatus status
 
-handleEvent :: State -> Event -> IO ()
-handleEvent state Event { evEvent = "follow", evSource = ETUser user}
-  -- they followed us
-  | userId user /= ourUserId state = do
-      let req = friendshipsCreate (UserIdParam $ userId user)
-      TI.putStrLn $ T.concat [ "following user ", user ^. TL.userScreenName ]
-      void $ sCall state req
-  -- we followed someone
-  | userId user == ourUserId state = return ()
-handleEvent _ ev =
-  TI.putStrLn $ T.concat ["ignoring event type ", ev ^. TL.evEvent]
+handleEvent :: Event -> ReaderT State IO ()
+handleEvent Event { evEvent = "follow", evSource = ETUser user} = do
+  ourID <- asks ourUserId
+  -- Someone followed us
+  when (userId user /= ourID) $ do
+    let req = friendshipsCreate (UserIdParam $ userId user)
+    liftIO $ TI.putStrLn $ T.concat [ "following user ", user ^. TL.userScreenName ]
+    void $ sCall req
+handleEvent ev =
+  liftIO $ TI.putStrLn $ T.concat ["ignoring event type ", ev ^. TL.evEvent]
 
 
 printStatus :: Status -> IO ()
