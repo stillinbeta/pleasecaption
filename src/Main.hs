@@ -65,7 +65,7 @@ main = do
   forever $ catchIOError (runReaderT runStream env) logError
 
 logError :: IOError -> IO ()
-logError = print
+logError err = putStr "encountered error: " >> print err
 
 runStream :: ReaderT Env IO ()
 runStream = runResourceT $ do
