@@ -2,25 +2,23 @@
 
 module Main where
 
-import Control.Monad (when, void, forever)
 import qualified Data.ByteString.Char8 as S8
 import qualified Data.Conduit as Conduit
 import qualified Data.Conduit.List as ConduitList
-import qualified Data.Text as T
-import qualified Data.Text.IO as TI
-import System.IO (hSetBuffering, stdout, BufferMode(..))
-import System.IO.Error (catchIOError)
-import System.Environment (getEnv)
-
+import qualified Data.Text as Text
+import qualified Data.Text.IO as TextIO
+import Control.Monad (when, void, forever)
 import Control.Monad.Trans.Resource (runResourceT)
 import Control.Monad.Trans.Class (lift)
 import Control.Monad.Reader (runReaderT, ReaderT, asks)
 import Control.Monad.IO.Class (liftIO)
-import Control.Lens ((^.))
+import System.IO (hSetBuffering, stdout, BufferMode(..))
+import System.IO.Error (catchIOError)
+import System.Environment (getEnv)
+
 import Web.Twitter.Conduit hiding (inReplyToStatusId, map, replies)
 import Web.Twitter.Types (StreamingAPI(..), Event(..), EventTarget(..),
                           UserId, Status(..), User(..))
-import qualified Web.Twitter.Types.Lens as TL
 
 import qualified Web.Twitter.PleaseCaption.Replies as Replies
 import qualified Web.Twitter.PleaseCaption.Status as Status
@@ -79,13 +77,12 @@ handleTL (SEvent e) = handleEvent e
 handleTL s = liftIO $ print s
 
 handleStatus :: Status -> ReaderT Env IO ()
-handleStatus status
-  | Status.hasPhotoEntities status = do
+handleStatus status =
+  when (Status.hasPhotoEntities status) $ do
       status' <- Client.askStatus $ statusId status
       when (not $ Status.hasAltText status') $ do
         reminderText <- liftIO Replies.getReminderText
         void $ Client.replyToStatus status reminderText
-  | True = liftIO $ TI.putStrLn (Status.asText status)
 
 
 handleEvent :: Event -> ReaderT Env IO ()
@@ -93,7 +90,8 @@ handleEvent Event { evEvent = "follow", evSource = ETUser user} = do
   ourID <- asks ourUserId
   -- Someone followed us
   when (userId user /= ourID) $ do
-    liftIO $ TI.putStrLn $ T.concat [ "following user ", user ^. TL.userScreenName ]
-    -- void $ followUser user
+    liftIO $ TextIO.putStrLn $ Text.concat [ "following user "
+                                           , userScreenName user]
+    void $ Client.followUser user
 handleEvent ev =
-  liftIO $ TI.putStrLn $ T.concat ["ignoring event type ", ev ^. TL.evEvent]
+  liftIO $ TextIO.putStrLn $ Text.concat ["ignoring event type ", evEvent ev]
