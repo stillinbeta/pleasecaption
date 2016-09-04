@@ -61,8 +61,8 @@ makeReplyBody status tweet = Text.concat ["@"
 replyToStatus :: (HasClient c, MonadReader c m, MonadIO m)
               => Status -> Text.Text -> m Status
 replyToStatus status tweet =
-  let reply = (update $ makeReplyBody status tweet)
-               & inReplyToStatusId ?~ (statusId status) in
+  let reply = update (makeReplyBody status tweet)
+               & inReplyToStatusId ?~ statusId status in
    sCall reply
 
 followUser ::  (HasClient c, MonadReader c m, MonadIO m) => User -> m User

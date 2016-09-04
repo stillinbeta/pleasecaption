@@ -8,6 +8,6 @@ assertAllLength :: Int -> [String] -> ExpQ
 assertAllLength size = foldM (consOrFail size) (ListE [])
 consOrFail :: Int -> Exp -> String -> ExpQ
 consOrFail size (ListE xs) x
-  | length x > size = fail $ (show x) ++ " is too long!"
-  | True = return $ ListE ((LitE $ StringL x):xs)
+  | length x > size = fail $ show x ++ " is too long!"
+  | otherwise = return $ ListE ((LitE $ StringL x):xs)
 consOrFail _ _ _ = fail "unexpected element"

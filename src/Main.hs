@@ -7,7 +7,7 @@ import qualified Data.Conduit as Conduit
 import qualified Data.Conduit.List as ConduitList
 import qualified Data.Text as Text
 import qualified Data.Text.IO as TextIO
-import Control.Monad (when, void, forever)
+import Control.Monad (when, unless, void, forever)
 import Control.Monad.Trans.Resource (runResourceT)
 import Control.Monad.Trans.Class (lift)
 import Control.Monad.Reader (runReaderT, ReaderT, asks)
@@ -80,7 +80,7 @@ handleStatus :: Status -> ReaderT Env IO ()
 handleStatus status =
   when (Status.hasPhotoEntities status) $ do
       status' <- Client.askStatus $ statusId status
-      when (not $ Status.hasAltText status') $ do
+      unless (Status.hasAltText status') $ do
         reminderText <- liftIO Replies.getReminderText
         void $ Client.replyToStatus status reminderText
 

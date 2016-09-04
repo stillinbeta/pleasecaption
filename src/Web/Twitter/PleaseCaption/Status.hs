@@ -14,7 +14,7 @@ import Web.Twitter.Types (Status(..), ExtendedEntities(..),
 
 getExtendedEntities :: Status -> [ExtendedEntity]
 getExtendedEntities status =
-  fromMaybe [] $ (map entityBody) . exeMedia <$> statusExtendedEntities status
+  fromMaybe [] $ map entityBody . exeMedia <$> statusExtendedEntities status
 
 hasPhotoEntities :: Status -> Bool
 hasPhotoEntities status =
