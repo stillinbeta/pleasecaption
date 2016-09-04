@@ -54,7 +54,7 @@ getTWInfo = do
 main :: IO ()
 main = do
   hSetBuffering stdout NoBuffering
-  putStrLn "pleasecaption: starting up"
+  putStrLn "pleasecaption: starting up!"
   mgr <- newManager tlsManagerSettings
   twinfo <- getTWInfo
   let client = Client.Client { Client.twInfo = twinfo, Client.manager = mgr }
