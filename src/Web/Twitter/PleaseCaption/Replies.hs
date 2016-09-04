@@ -1,4 +1,5 @@
 {-# LANGUAGE OverloadedStrings#-}
+{-# LANGUAGE TemplateHaskell #-}
 module Web.Twitter.PleaseCaption.Replies (getReminderText) where
 
 import Data.Text(Text)
@@ -6,8 +7,11 @@ import Data.Random.Extras (choice)
 import Data.Random.RVar (runRVar)
 import Data.Random.Source.DevRandom (DevRandom(DevURandom))
 
+import Web.Twitter.PleaseCaption.Replies.Assert (assertAllLength)
+
 reminders :: [Text]
-reminders =
+-- Warning! Can't be more than 132 characters
+reminders = $(assertAllLength 132
   [ "please don't forget to caption your tweets!"
   , "hey, this tweet's images don't all have alt text!"
   , "psst, you missed the alt text in this tweet"
@@ -18,8 +22,8 @@ reminders =
   , "this tweet is pretty cool, but you know what's even cooler? alt text"
   , "help make twitter more accessible by adding descriptions to your images!"
   -- add more here!
-  ]
+  ])
+
 
 getReminderText :: IO Text
--- TODO: Will eventually pick one at random
 getReminderText = runRVar (choice reminders) DevURandom
