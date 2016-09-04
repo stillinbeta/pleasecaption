@@ -19,7 +19,7 @@ getExtendedEntities status =
 hasPhotoEntities :: Status -> Bool
 hasPhotoEntities status =
   let entities = getExtendedEntities status in
-    not $ null entities && all (=="photo") (map exeType entities)
+    (not $ null entities) && all (=="photo") (map exeType entities)
 
 hasAltText :: Status -> Bool
 hasAltText status =
