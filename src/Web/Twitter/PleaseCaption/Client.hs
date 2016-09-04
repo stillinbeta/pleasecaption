@@ -12,6 +12,7 @@ module Web.Twitter.PleaseCaption.Client ( Client(..)
 import Control.Lens ((&), (?~))
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import Control.Monad.Trans.Resource (MonadResource)
+import Control.Monad.Trans.Class (lift, MonadTrans(..))
 import Control.Monad.Reader(MonadReader, asks)
 import qualified Data.Aeson as Aeson
 import qualified Data.Conduit as Conduit
@@ -70,7 +71,8 @@ followUser user =
 
 
 -- Should be wrapped in a reader, but I don't know how ;_;
-startStream :: (MonadResource m0)
-          => Client -> m0 (Conduit.ResumableSource m0 StreamingAPI)
-startStream Client {twInfo = twinfo, manager = mgr} =
+startStream :: (HasClient c, MonadReader c m, MonadResource m)
+          =>  m (Conduit.ResumableSource m StreamingAPI)
+startStream = do
+  Client { twInfo = twinfo, manager = mgr } <- asks getClient
   stream twinfo mgr $ userstream & replies ?~ "all"

@@ -2,17 +2,19 @@
 
 module Main where
 
-import Control.Monad (when, void)
+import Control.Monad (when, void, forever)
 import qualified Data.ByteString.Char8 as S8
 import qualified Data.Conduit as C
 import qualified Data.Conduit.List as CL
 import qualified Data.Text as T
 import qualified Data.Text.IO as TI
 import System.IO (hSetBuffering, stdout, BufferMode(..))
+import System.IO.Error (catchIOError)
 import System.Environment (getEnv)
 
-import Control.Monad.Trans.Resource (runResourceT)
-import Control.Monad.Reader (runReaderT, ReaderT(..), asks)
+import Control.Monad.Trans.Resource (runResourceT, ResourceT)
+import Control.Monad.Trans.Class (lift)
+import Control.Monad.Reader (runReaderT, ReaderT(..), asks, ask)
 import Control.Monad.IO.Class (liftIO)
 import Control.Lens ((^.))
 import Web.Twitter.Conduit hiding (inReplyToStatusId, map, replies)
@@ -60,9 +62,16 @@ main = do
   let client = Client.Client { Client.twInfo = twinfo, Client.manager = mgr }
   uid <- runReaderT Client.getUserId client
   let env = Env { ourClient = client, ourUserId = uid}
-  runResourceT $ do
-    src <- Client.startStream client
-    src C.$$+- CL.mapM_ (liftIO . (\s -> runReaderT (handleTL s) env))
+  forever $ catchIOError (runReaderT runStream env) logError
+
+logError :: IOError -> IO ()
+logError = print
+
+runStream :: ReaderT Env IO ()
+runStream = runResourceT $ do
+    src <- Client.startStream
+    env <- ask
+    src C.$$+- CL.mapM_ $ (\s -> liftIO (runReaderT (handleTL s) env))
 
 handleTL :: StreamingAPI -> ReaderT Env IO ()
 handleTL (SStatus s) = handleStatus s
@@ -83,6 +92,7 @@ handleStatus status
         reminderText <- liftIO Replies.getReminderText
         void $ Client.replyToStatus status reminderText
   | True = liftIO $ TI.putStrLn (Status.asText status)
+
 
 handleEvent :: Event -> ReaderT Env IO ()
 handleEvent Event { evEvent = "follow", evSource = ETUser user} = do

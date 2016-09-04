@@ -16,6 +16,7 @@ executable pleasecaption
   hs-source-dirs:      src
   other-modules:       Web.Twitter.PleaseCaption.Replies,
                        Web.Twitter.PleaseCaption.Client
+                       Web.Twitter.PleaseCaption.Status
   main-is:             Main.hs
   default-language:    Haskell2010
   build-depends:       base >= 4.7 && < 5,
