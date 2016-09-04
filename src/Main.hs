@@ -4,17 +4,17 @@ module Main where
 
 import Control.Monad (when, void, forever)
 import qualified Data.ByteString.Char8 as S8
-import qualified Data.Conduit as C
-import qualified Data.Conduit.List as CL
+import qualified Data.Conduit as Conduit
+import qualified Data.Conduit.List as ConduitList
 import qualified Data.Text as T
 import qualified Data.Text.IO as TI
 import System.IO (hSetBuffering, stdout, BufferMode(..))
 import System.IO.Error (catchIOError)
 import System.Environment (getEnv)
 
-import Control.Monad.Trans.Resource (runResourceT, ResourceT)
+import Control.Monad.Trans.Resource (runResourceT)
 import Control.Monad.Trans.Class (lift)
-import Control.Monad.Reader (runReaderT, ReaderT(..), asks, ask)
+import Control.Monad.Reader (runReaderT, ReaderT, asks)
 import Control.Monad.IO.Class (liftIO)
 import Control.Lens ((^.))
 import Web.Twitter.Conduit hiding (inReplyToStatusId, map, replies)
@@ -70,19 +70,13 @@ logError = print
 runStream :: ReaderT Env IO ()
 runStream = runResourceT $ do
     src <- Client.startStream
-    env <- ask
-    src C.$$+- CL.mapM_ $ (\s -> liftIO (runReaderT (handleTL s) env))
+    let sink = ConduitList.mapM_ $ lift . handleTL
+    src Conduit.$$+- sink
 
 handleTL :: StreamingAPI -> ReaderT Env IO ()
 handleTL (SStatus s) = handleStatus s
 handleTL (SEvent e) = handleEvent e
 handleTL s = liftIO $ print s
-
-getUserId :: Manager -> TWInfo -> IO UserId
-getUserId mgr twinfo = do
-  user <- call twinfo mgr accountVerifyCredentials
-  let User {userId = uid} = user in
-    return uid
 
 handleStatus :: Status -> ReaderT Env IO ()
 handleStatus status
