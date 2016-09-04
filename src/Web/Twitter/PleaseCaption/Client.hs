@@ -54,7 +54,7 @@ askStatus sid = sCall $ showId sid & includeExtAltText ?~ True
 makeReplyBody :: Status -> Text.Text -> Text.Text
 makeReplyBody status tweet = Text.concat ["@"
                                       , (userScreenName . statusUser) status
-                                      ,""
+                                      ," "
                                       , tweet
                                       ]
 
