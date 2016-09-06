@@ -2,16 +2,17 @@
 
 module Main where
 
-import qualified Data.ByteString.Char8 as S8
-import qualified Data.Conduit as Conduit
-import qualified Data.Conduit.List as ConduitList
-import qualified Data.Text as Text
-import qualified Data.Text.IO as TextIO
 import Control.Monad (when, unless, void, forever)
 import Control.Monad.Trans.Resource (runResourceT)
 import Control.Monad.Trans.Class (lift)
 import Control.Monad.Reader (runReaderT, ReaderT, asks)
 import Control.Monad.IO.Class (liftIO)
+import qualified Data.ByteString.Char8 as S8
+import qualified Data.Conduit as Conduit
+import qualified Data.Conduit.List as ConduitList
+import qualified Data.Text as Text
+import qualified Data.Text.IO as TextIO
+import Data.Version (showVersion)
 import System.IO (hSetBuffering, stdout, BufferMode(..))
 import System.IO.Error (catchIOError)
 import System.Environment (getEnv)
@@ -20,6 +21,7 @@ import Web.Twitter.Conduit hiding (inReplyToStatusId, map, replies)
 import Web.Twitter.Types (StreamingAPI(..), Event(..), EventTarget(..),
                           UserId, Status(..), User(..))
 
+import Paths_pleasecaption (version)
 import qualified Web.Twitter.PleaseCaption.Replies as Replies
 import qualified Web.Twitter.PleaseCaption.Status as Status
 import qualified Web.Twitter.PleaseCaption.Client as Client
@@ -54,7 +56,7 @@ getTWInfo = do
 main :: IO ()
 main = do
   hSetBuffering stdout NoBuffering
-  putStrLn "pleasecaption: starting up!"
+  putStrLn $ "pleasecaption(" ++ showVersion version ++ "): starting up!"
   mgr <- newManager tlsManagerSettings
   twinfo <- getTWInfo
   let client = Client.Client { Client.twInfo = twinfo, Client.manager = mgr }
@@ -81,8 +83,9 @@ handleStatus status =
   when (Status.hasPhotoEntities status) $ do
       status' <- Client.askStatus $ statusId status
       unless (Status.hasAltText status') $ do
-        reminderText <- liftIO Replies.getReminderText
+        reminderText <- Replies.getReminderText
         void $ Client.replyToStatus status reminderText
+        liftIO $ putStrLn "sent reminder!"
 
 
 handleEvent :: Event -> ReaderT Env IO ()

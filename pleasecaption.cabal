@@ -1,13 +1,12 @@
 name:                pleasecaption
-version:             0.2.0.0
-synopsis:            Simple project template from stack
-description:         Please see README.md
-homepage:            https://github.com/githubuser/pleasecaption#readme
-license:             BSD3
+version:             0.2.0.1
+synopsis:            A twitter bot that reminds you to caption your status
+homepage:            https://github.com/stillinbeta/pleasecaption#readme
+license:             MIT
 license-file:        LICENSE
-author:              Author name here
-maintainer:          example@example.com
-copyright:           2016 Author name here
+author:              Liz (@stillinbeta)
+maintainer:          web+pleasecaption@stillinbeta.com
+copyright:           2016 Liz (@stillinbeta)
 category:            Web
 build-type:          Simple
 cabal-version:       >=1.10

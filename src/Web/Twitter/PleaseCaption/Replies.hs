@@ -2,6 +2,7 @@
 {-# LANGUAGE TemplateHaskell #-}
 module Web.Twitter.PleaseCaption.Replies (getReminderText) where
 
+import Control.Monad.IO.Class (liftIO, MonadIO(..))
 import Data.Text(Text)
 import Data.Random.Extras (choice)
 import Data.Random.RVar (runRVar)
@@ -25,5 +26,5 @@ reminders = $(assertAllLength 132
   ])
 
 
-getReminderText :: IO Text
-getReminderText = runRVar (choice reminders) DevURandom
+getReminderText :: (MonadIO m) => m Text
+getReminderText = liftIO $ runRVar (choice reminders) DevURandom
