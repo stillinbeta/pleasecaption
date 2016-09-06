@@ -1,4 +1,3 @@
-flags: {}
 extra-package-dbs: []
 packages:
 - '.'
@@ -14,3 +13,5 @@ packages:
 extra-deps:
 - random-extras-0.19
 resolver: lts-6.14
+build:
+  force-dirty: true
