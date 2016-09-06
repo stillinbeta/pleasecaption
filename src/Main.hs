@@ -74,7 +74,7 @@ runStream = runResourceT $ do
 handleTL :: StreamingAPI -> ReaderT Env IO ()
 handleTL (SStatus s) = handleStatus s
 handleTL (SEvent e) = handleEvent e
-handleTL s = liftIO $ print s
+handleTL s = return ()
 
 handleStatus :: Status -> ReaderT Env IO ()
 handleStatus status =
