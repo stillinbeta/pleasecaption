@@ -3,7 +3,7 @@
 module Web.Twitter.PleaseCaption.Replies (getReminderText) where
 
 import Control.Monad.IO.Class (liftIO, MonadIO(..))
-import Data.Text(Text)
+import Data.Text (Text)
 import Data.Random.Extras (choice)
 import Data.Random.RVar (runRVar)
 import Data.Random.Source.DevRandom (DevRandom(DevURandom))
