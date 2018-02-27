@@ -7,7 +7,6 @@ import Control.Monad.Trans.Resource (runResourceT)
 import Control.Monad.Trans.Class (lift)
 import Control.Monad.Reader (runReaderT, ReaderT, asks)
 import Control.Monad.IO.Class (liftIO)
-import qualified Data.ByteString.Char8 as S8
 import qualified Data.Conduit as Conduit
 import qualified Data.Conduit.List as ConduitList
 import qualified Data.Text as Text
@@ -15,43 +14,16 @@ import qualified Data.Text.IO as TextIO
 import Data.Version (showVersion)
 import System.IO (hSetBuffering, stdout, BufferMode(..))
 import System.IO.Error (catchIOError)
-import System.Environment (getEnv)
 
-import Web.Twitter.Conduit hiding (inReplyToStatusId, map, replies)
+import Web.Twitter.Conduit
 import Web.Twitter.Types (StreamingAPI(..), Event(..), EventTarget(..),
-                          UserId, Status(..), User(..))
+                          Status(..), User(..))
 
 import Paths_pleasecaption (version)
 import qualified Web.Twitter.PleaseCaption.Replies as Replies
 import qualified Web.Twitter.PleaseCaption.Status as Status
 import qualified Web.Twitter.PleaseCaption.Client as Client
-
-
-data Env = Env {
-  ourClient :: Client.Client,
-  ourUserId :: UserId
-  }
-
-instance Client.HasClient Env where
-  getClient = ourClient
-
-getTWInfo :: IO TWInfo
-getTWInfo = do
-    consumerKey <- getEnv' "OAUTH_CONSUMER_KEY"
-    consumerSecret <- getEnv' "OAUTH_CONSUMER_SECRET"
-    accessToken <- getEnv' "OAUTH_ACCESS_TOKEN"
-    accessSecret <- getEnv' "OAUTH_ACCESS_SECRET"
-    let oauth = twitterOAuth
-            { oauthConsumerKey = consumerKey
-            , oauthConsumerSecret = consumerSecret
-            }
-        cred = Credential
-            [ ("oauth_token", accessToken)
-            , ("oauth_token_secret", accessSecret)
-            ]
-    return $ setCredential oauth cred def
-  where
-    getEnv' = (S8.pack <$>) . getEnv
+import Web.Twitter.PleaseCaption.Config (getTWInfo, Env(..))
 
 main :: IO ()
 main = do
@@ -76,7 +48,7 @@ runStream = runResourceT $ do
 handleTL :: StreamingAPI -> ReaderT Env IO ()
 handleTL (SStatus s) = handleStatus s
 handleTL (SEvent e) = handleEvent e
-handleTL s = return ()
+handleTL _ = return ()
 
 handleStatus :: Status -> ReaderT Env IO ()
 handleStatus status =

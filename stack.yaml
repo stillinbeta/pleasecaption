@@ -1,17 +1,12 @@
 extra-package-dbs: []
 packages:
 - '.'
-- location:
-    git: https://github.com/stillinbeta/twitter-types.git
-    commit: 8a598accc4715d6b3b7e1ed19947aa99837a84f5
+extra-deps:
+- random-extras-0.19
+- git: https://github.com/stillinbeta/twitter-types.git
+  commit: 63c6de714634c665ef6f34d421a22d101baa3da3
   subdirs:
   - twitter-types
   - twitter-types-lens
-- location:
-    git: https://github.com/stillinbeta/twitter-conduit.git
-    commit: cdce8717304d76ffccc872fd9ed1cb0f5cdf525d
-extra-deps:
-- random-extras-0.19
-resolver: lts-6.14
-build:
-  force-dirty: true
+
+resolver: lts-10.5
