@@ -11,15 +11,13 @@ category:            Web
 build-type:          Simple
 cabal-version:       >=1.10
 
-executable pleasecaption
+library
   hs-source-dirs:      src
-  other-modules:       Web.Twitter.PleaseCaption.Replies,
+  exposed-modules:     Web.Twitter.PleaseCaption.Replies,
                        Web.Twitter.PleaseCaption.Replies.Assert,
                        Web.Twitter.PleaseCaption.Client,
                        Web.Twitter.PleaseCaption.Status,
                        Web.Twitter.PleaseCaption.Config
-                       Paths_pleasecaption
-  main-is:             Main.hs
   default-language:    Haskell2010
   build-depends:       base >= 4.7 && < 5,
                        aeson >= 0.11,
@@ -37,3 +35,18 @@ executable pleasecaption
                        transformers >= 0.4,
                        twitter-types,
                        twitter-types-lens
+
+executable pleasecaption
+  hs-source-dirs:      exe
+  main-is:             Main.hs
+  build-depends:       base >= 4.7 && < 5,
+                       conduit >= 1.2,
+                       mtl >= 2.2.1,
+                       resourcet >= 1.1.7.4,
+                       twitter-conduit >= 0.2.3,
+                       twitter-types,
+                       text >= 1.2.2.1,
+                       transformers >= 0.4,
+                       pleasecaption
+  other-modules:       Paths_pleasecaption
+  default-language:    Haskell2010
