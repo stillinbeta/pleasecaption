@@ -33,6 +33,7 @@ library
                        text >= 1.2.2.1,
                        twitter-conduit >= 0.2.3,
                        transformers >= 0.4,
+                       transformers-base >= 0.4,
                        twitter-types,
                        twitter-types-lens
 
@@ -49,4 +50,16 @@ executable pleasecaption
                        transformers >= 0.4,
                        pleasecaption
   other-modules:       Paths_pleasecaption
+  default-language:    Haskell2010
+
+executable pleasecaption-unfollow
+  hs-source-dirs:      exe
+  main-is:             Main-unfollow.hs
+  build-depends:       base >= 4.7 && < 5,
+                       twitter-conduit >= 0.2.3,
+                       transformers-base >= 0.4,
+                       mtl >= 2.2.1,
+                       containers >= 0.5,
+                       pleasecaption,
+                       twitter-types
   default-language:    Haskell2010

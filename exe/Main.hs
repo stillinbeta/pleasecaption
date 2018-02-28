@@ -67,6 +67,6 @@ handleEvent Event { evEvent = "follow", evSource = ETUser user} = do
   when (userId user /= ourID) $ do
     liftIO $ TextIO.putStrLn $ Text.concat [ "following user "
                                            , userScreenName user]
-    void $ Client.followUser user
+    void $ Client.followUser (userId user)
 handleEvent ev =
   liftIO $ TextIO.putStrLn $ Text.concat ["ignoring event type ", evEvent ev]
